@@ -12,6 +12,7 @@ export type PersistedState = {
   simulationYear: number
   musicVolume: number
   musicEnabled: boolean
+  musicStyle: 'ambient' | 'retro'
   cinematicMode: boolean
   showOrbits: boolean
   showLabels: boolean

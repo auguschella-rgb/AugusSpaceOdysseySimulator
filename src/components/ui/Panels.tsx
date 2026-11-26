@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
-import { ambientEngine } from '../../audio/ambientEngine'
+import { musicController } from '../../audio/musicController'
+import { playlistEngine } from '../../audio/playlistEngine'
 import { sfxEngine } from '../../audio/sfxEngine'
 import { isFullscreen, toggleFullscreen } from '../../utils/fullscreen'
+import { RETRO_TRACKS, type MusicStyle, type RetroTrack } from '../../data/retroTracks'
 
 function PanelShell({
   title,
@@ -147,21 +149,39 @@ function MusicPanel() {
   const setMusicEnabled = useSimulatorStore((s) => s.setMusicEnabled)
   const musicVolume = useSimulatorStore((s) => s.musicVolume)
   const setMusicVolume = useSimulatorStore((s) => s.setMusicVolume)
+  const musicStyle = useSimulatorStore((s) => s.musicStyle)
+  const setMusicStyle = useSimulatorStore((s) => s.setMusicStyle)
   const setActivePanel = useSimulatorStore((s) => s.setActivePanel)
+  const [currentTrack, setCurrentTrack] = useState<RetroTrack | null>(
+    playlistEngine.getCurrentTrack(),
+  )
 
   useEffect(() => {
-    ambientEngine.setVolume(musicVolume)
+    musicController.setVolume(musicVolume)
   }, [musicVolume])
 
-  const handleToggle = async (on: boolean) => {
+  useEffect(() => {
+    return playlistEngine.subscribe((track) => {
+      setCurrentTrack(track)
+    })
+  }, [])
+
+  const handleToggle = (on: boolean) => {
     void sfxEngine.playUiTap()
     setMusicEnabled(on)
-    await ambientEngine.toggle(on)
+    musicController.toggle(on, musicStyle)
+  }
+
+  const handleStyle = (style: MusicStyle) => {
+    if (style === musicStyle) return
+    void sfxEngine.playUiTap()
+    setMusicStyle(style)
+    musicController.setStyle(style, musicEnabled)
   }
 
   return (
     <PanelShell
-      title="Ambient Music"
+      title="Music"
       onClose={() => {
         void sfxEngine.playUiTap()
         setActivePanel(null)
@@ -169,11 +189,77 @@ function MusicPanel() {
     >
       <div className="space-y-5">
         <p className="text-[12px] text-white/55">
-          Dynamic original cinematic score with smooth zone crossfades: hopeful near
-          Earth, mysterious near Jupiter, dark ambient in deep space, and
-          powerful tension near the Sun. Subtle space ambience always present.
-          No copyrighted material.
+          Choose the original cinematic ambient score, or an 80s Retro playlist of
+          licensed synth, new-wave and arcade tracks. No copyrighted commercial
+          recordings.
         </p>
+        <div>
+          <p className="text-[11px] tracking-[0.15em] uppercase text-space-muted mb-2">
+            Style
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className={`glass-button py-2 rounded-xl text-[11px] tracking-[0.12em] uppercase ${
+                musicStyle === 'retro' ? 'active' : ''
+              }`}
+              aria-pressed={musicStyle === 'retro'}
+              onClick={() => handleStyle('retro')}
+            >
+              80s Retro
+            </button>
+            <button
+              type="button"
+              className={`glass-button py-2 rounded-xl text-[11px] tracking-[0.12em] uppercase ${
+                musicStyle === 'ambient' ? 'active' : ''
+              }`}
+              aria-pressed={musicStyle === 'ambient'}
+              onClick={() => handleStyle('ambient')}
+            >
+              Ambient (original)
+            </button>
+          </div>
+        </div>
+        {musicStyle === 'ambient' ? (
+          <p className="text-[12px] text-white/45">
+            Dynamic original score with smooth zone crossfades: hopeful near Earth,
+            mysterious near Jupiter, dark ambient in deep space, and powerful
+            tension near the Sun.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] tracking-[0.15em] uppercase text-space-muted">
+                  Now playing
+                </p>
+                <p className="text-[13px] text-white/90 truncate">
+                  {currentTrack?.title ?? '80s Retro playlist'}
+                </p>
+                <p className="text-[11px] text-white/45 truncate">
+                  {currentTrack
+                    ? `${currentTrack.artist} · ${currentTrack.license}`
+                    : 'Licensed CC BY / CC0 tracks'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="glass-button shrink-0 px-3 py-2 rounded-xl text-[11px] tracking-[0.12em] uppercase"
+                onClick={() => {
+                  void sfxEngine.playUiTap()
+                  musicController.next()
+                }}
+                aria-label="Next track"
+              >
+                Next
+              </button>
+            </div>
+            <p className="text-[10px] text-white/35 leading-relaxed">
+              Credits are listed in About. Tracks by Kevin MacLeod (incompetech.com)
+              use CC BY 4.0; 80&apos;s Synth Wave by Pro Sensory is CC0.
+            </p>
+          </div>
+        )}
         <ToggleRow
           label="Music"
           description={musicEnabled ? 'Soundtrack active' : 'Soundtrack muted'}
@@ -240,8 +326,8 @@ function HelpPanel() {
           interface for clean screenshots of deep space.
         </li>
         <li>
-          <strong className="text-white/90">Music</strong> — Toggle the ambient
-          engine and set volume from the Music panel.
+          <strong className="text-white/90">Music</strong> — Toggle the soundtrack,
+          pick Ambient or 80s Retro, and set volume from the Music panel.
         </li>
       </ul>
     </PanelShell>
@@ -269,6 +355,44 @@ function AboutPanel() {
           and CC-BY science maps where noted. Orbital mechanics remain simplified
           for real-time visualization.
         </p>
+        <div className="text-white/45 text-[11px] pt-2 border-t border-white/5 space-y-2">
+          <p className="text-white/70 tracking-[0.15em] uppercase text-[10px]">
+            Music credits
+          </p>
+          <p>
+            Original ambient score is synthesized in the app. The 80s Retro
+            playlist uses openly licensed tracks (no commercial recordings):
+          </p>
+          <ul className="space-y-1.5 list-disc pl-4">
+            {RETRO_TRACKS.map((track) => (
+              <li key={track.id}>
+                <a
+                  href={track.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white/80 underline decoration-white/20 hover:decoration-white/60"
+                >
+                  {track.title}
+                </a>
+                {' '}
+                by {track.artist} —{' '}
+                <a
+                  href={track.licenseUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-white/20 hover:decoration-white/60"
+                >
+                  {track.license}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p>
+            Kevin MacLeod tracks: Title Kevin MacLeod (incompetech.com) Licensed
+            under Creative Commons: By Attribution 4.0 —
+            https://creativecommons.org/licenses/by/4.0/
+          </p>
+        </div>
         <p className="text-white/35 text-[11px] pt-2 border-t border-white/5">
           Built with React, Three.js, React Three Fiber, Tailwind CSS & Framer
           Motion.

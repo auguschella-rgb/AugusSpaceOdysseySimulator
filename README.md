@@ -14,7 +14,7 @@ Premium cinematic Solar System Explorer — Version 1 (Mission Alpha).
 - Timeline year control (1990–2100)
 - Simulation speed, pause, play, reset
 - Photo mode (UI-free screenshots)
-- Original Web Audio ambient soundtrack (no copyrighted music)
+- Soundtrack: original Web Audio ambient score, plus an 80s Retro playlist (CC BY / CC0; see MUSIC_CREDITS.md)
 - NASA / Interstellar–inspired glass UI
 
 ## Tech Stack
@@ -57,7 +57,7 @@ npm run preview
 
 ```
 src/
-  audio/           Ambient Web Audio engine
+  audio/           Ambient Web Audio engine + 80s playlist player
   components/
     landing/       Landing page
     scene/         R3F solar system

@@ -13,7 +13,7 @@ import { MobileUI } from './components/ui/MobileUI'
 import { isMobile } from './utils/device'
 import { useSimulatorStore } from './store/useSimulatorStore'
 import { useExplorationStore } from './store/useExplorationStore'
-import { ambientEngine } from './audio/ambientEngine'
+import { musicController } from './audio/musicController'
 import { sfxEngine } from './audio/sfxEngine'
 import { isFullscreen, toggleFullscreen, exitFullscreen } from './utils/fullscreen'
 
@@ -32,7 +32,7 @@ export default function App() {
 
   useEffect(() => {
     return () => {
-      ambientEngine.dispose()
+      musicController.dispose()
       sfxEngine.dispose()
     }
   }, [])

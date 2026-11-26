@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
-import { ambientEngine } from '../../audio/ambientEngine'
+import { musicController } from '../../audio/musicController'
 import { sfxEngine } from '../../audio/sfxEngine'
 
 export function LandingPage() {
@@ -37,16 +37,15 @@ export function LandingPage() {
     []
   )
 
-  const handleBegin = async () => {
-    try {
-      await ambientEngine.start()
-      setMusicEnabled(true)
-      await sfxEngine.startHum()
-    } catch {
-      // Autoplay may still work after click
-    }
-    void sfxEngine.playUiTap()
+  const handleBegin = () => {
+    // Enter the sim immediately — never wait on audio startup (mobile can stall).
     setHasStarted(true)
+    setMusicEnabled(true)
+    const { musicStyle, musicVolume } = useSimulatorStore.getState()
+    musicController.setVolume(musicVolume)
+    musicController.toggle(true, musicStyle)
+    void sfxEngine.startHum()
+    void sfxEngine.playUiTap()
   }
 
   if (!bootComplete) return null

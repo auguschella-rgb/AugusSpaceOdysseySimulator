@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { loadPersistedState, savePersistedState } from '../utils/persistState'
+import type { MusicStyle } from '../data/retroTracks'
 
 export type PanelId = 'settings' | 'music' | 'help' | 'about' | 'camera' | null
 
@@ -70,6 +71,8 @@ export interface SimulatorState {
   setMusicEnabled: (v: boolean) => void
   musicVolume: number
   setMusicVolume: (v: number) => void
+  musicStyle: MusicStyle
+  setMusicStyle: (v: MusicStyle) => void
   sfxEnabled: boolean
   setSfxEnabled: (v: boolean) => void
 
@@ -96,6 +99,7 @@ function persistSlice(get: () => SimulatorState) {
     simulationYear: s.simulationYear,
     musicVolume: s.musicVolume,
     musicEnabled: s.musicEnabled,
+    musicStyle: s.musicStyle,
     cinematicMode: s.cinematicMode,
     showOrbits: s.showOrbits,
     showLabels: s.showLabels,
@@ -215,6 +219,11 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     set({ musicVolume: v })
     persistSlice(get)
   },
+  musicStyle: 'retro',
+  setMusicStyle: (v) => {
+    set({ musicStyle: v })
+    persistSlice(get)
+  },
   sfxEnabled: true,
   setSfxEnabled: (v) => {
     set({ sfxEnabled: v })
@@ -236,6 +245,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       simulationYear: p.simulationYear ?? DEFAULT_YEAR,
       musicVolume: p.musicVolume ?? 0.35,
       musicEnabled: p.musicEnabled ?? false,
+      musicStyle: p.musicStyle === 'ambient' ? 'ambient' : 'retro',
       cinematicMode: p.cinematicMode ?? true,
       showOrbits: p.showOrbits ?? true,
       showLabels: p.showLabels ?? true,
