@@ -3,6 +3,9 @@ import { useExplorationStore } from '../../store/useExplorationStore'
 import { MISSIONS_BY_ID } from '../../data/missions'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
 import { sfxEngine } from '../../audio/sfxEngine'
+import { isMobile } from '../../utils/device'
+import { useMobileUiStore } from '../../store/useMobileUiStore'
+import { MobileBottomCard } from './MobileBottomCard'
 
 /**
  * Mission / probe discovery dossier — complements PlanetInfoPanel.
@@ -13,44 +16,12 @@ export function DiscoveryPanel() {
   const setId = useExplorationStore((s) => s.setSelectedDiscoveryId)
   const startTravel = useExplorationStore((s) => s.startTravel)
   const entry = id ? MISSIONS_BY_ID[id] : null
+  const sheetOpen = useMobileUiStore((s) => s.sheetOpen)
 
   if (photoMode || !entry) return null
 
-  return (
-    <AnimatePresence>
-      <motion.aside
-        data-asos-ui
-        className="glass-panel fixed top-20 right-4 z-30 w-[min(100vw-2rem,340px)] max-h-[calc(100vh-10rem)] rounded-2xl overflow-hidden flex flex-col"
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        initial={{ opacity: 0, x: 40 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 40 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-white/5">
-          <div>
-            <p className="text-[9px] tracking-[0.3em] uppercase text-space-muted mb-1">
-              Discovery · {entry.kind}
-            </p>
-            <h2 className="font-display text-lg tracking-wide text-white text-glow-soft">
-              {entry.name}
-            </h2>
-          </div>
-          <button
-            type="button"
-            className="glass-button w-8 h-8 rounded-lg text-sm flex items-center justify-center shrink-0"
-            onClick={() => {
-              void sfxEngine.playUiTap()
-              setId(null)
-            }}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="panel-scroll overflow-y-auto px-5 py-4 space-y-3 text-[12px]">
+  const details = (
+    <div className="space-y-3 text-[12px]">
           <div
             className="h-1 w-16 rounded-full"
             style={{ background: `linear-gradient(90deg, ${entry.color}, transparent)` }}
@@ -122,6 +93,69 @@ export function DiscoveryPanel() {
               Mission information available — trajectory visualization pending
             </p>
           )}
+    </div>
+  )
+
+  if (isMobile) {
+    return sheetOpen ? null : (
+      <AnimatePresence>
+        <MobileBottomCard
+          key={entry.id}
+          kicker={`Discovery · ${entry.kind}`}
+          title={entry.name}
+          accent={entry.color}
+          stats={[
+            { label: 'Mission', value: entry.mission ?? entry.kind },
+            { label: 'Launch', value: entry.launchDate ?? '—' },
+            { label: 'Status', value: entry.status ?? '—' },
+          ]}
+          onClose={() => {
+            void sfxEngine.playUiTap()
+            setId(null)
+          }}
+        >
+          {details}
+        </MobileBottomCard>
+      </AnimatePresence>
+    )
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.aside
+        data-asos-ui
+        className="glass-panel fixed top-20 right-4 z-30 w-[min(100vw-2rem,340px)] max-h-[calc(100vh-10rem)] rounded-2xl overflow-hidden flex flex-col"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, x: 40 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 40 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-white/5">
+          <div>
+            <p className="text-[9px] tracking-[0.3em] uppercase text-space-muted mb-1">
+              Discovery · {entry.kind}
+            </p>
+            <h2 className="font-display text-lg tracking-wide text-white text-glow-soft">
+              {entry.name}
+            </h2>
+          </div>
+          <button
+            type="button"
+            className="glass-button w-8 h-8 rounded-lg text-sm flex items-center justify-center shrink-0"
+            onClick={() => {
+              void sfxEngine.playUiTap()
+              setId(null)
+            }}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="panel-scroll overflow-y-auto px-5 py-4 space-y-3 text-[12px]">
+          {details}
         </div>
       </motion.aside>
     </AnimatePresence>

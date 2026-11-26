@@ -12,7 +12,7 @@ const SPEED_PRESETS = [
   { label: '100×', value: 100 },
 ]
 
-export function BottomBar() {
+export function BottomBar({ section }: { section?: 'planets' | 'camera' } = {}) {
   const photoMode = useSimulatorStore((s) => s.photoMode)
   const isPaused = useSimulatorStore((s) => s.isPaused)
   const togglePause = useSimulatorStore((s) => s.togglePause)
@@ -35,6 +35,202 @@ export function BottomBar() {
     selectPlanet(id, true)
   }
 
+
+  const timelineCard = (
+  <div className="pointer-events-auto glass-panel rounded-2xl px-4 sm:px-6 py-3 mx-auto w-full max-w-3xl">
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted">
+        Simulation Timeline
+      </span>
+      <span className="font-display text-sm text-space-accent tabular-nums">
+        {Math.round(simulationYear)}
+      </span>
+    </div>
+    <input
+      type="range"
+      min={1990}
+      max={2100}
+      step={1}
+      value={simulationYear}
+      onChange={(e) => {
+        const now = performance.now()
+        if (now - timelineSfxAt.current > 90) {
+          void sfxEngine.playTimeline()
+          timelineSfxAt.current = now
+        }
+        setSimulationYear(Number(e.target.value))
+      }}
+      className="space-slider"
+      aria-label="Simulation year"
+    />
+    <div className="flex justify-between mt-1.5 text-[9px] tracking-wider text-white/30 tabular-nums">
+      <span>1990</span>
+      <span>2000</span>
+      <span>2025</span>
+      <span>2050</span>
+      <span>2100</span>
+    </div>
+  </div>
+
+  )
+  const playbackCard = (
+  <div className="pointer-events-auto glass-panel rounded-2xl px-3 sm:px-4 py-3 flex flex-col gap-2.5">
+    <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted">
+      Simulation Speed
+    </span>
+    <div className="flex flex-wrap items-center gap-1.5">
+      {SPEED_PRESETS.map((p) => (
+        <button
+          key={p.value}
+          type="button"
+          className={`glass-button px-2.5 py-1 rounded-lg text-[10px] tabular-nums ${
+            simulationSpeed === p.value ? 'active' : ''
+          }`}
+          onClick={() => {
+            void sfxEngine.playUiTap()
+            setSimulationSpeed(p.value)
+          }}
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        className={`glass-button px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase ${
+          isPaused ? 'active' : ''
+        }`}
+        onClick={() => {
+          void sfxEngine.playUiTap()
+          togglePause()
+        }}
+      >
+        {isPaused ? 'Play' : 'Pause'}
+      </button>
+      <button
+        type="button"
+        className="glass-button px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase"
+        onClick={() => {
+          void sfxEngine.playUiTap()
+          resetSimulation()
+        }}
+      >
+        Reset
+      </button>
+    </div>
+  </div>
+
+  )
+  const planetsCard = (
+  <div className="glass-panel rounded-2xl px-3 sm:px-4 py-3">
+    <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted block mb-2">
+      Planet Information
+    </span>
+    <div className="flex flex-wrap gap-1 max-w-[280px]">
+      {SELECTABLE_BODIES.map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          className={`glass-button px-2 py-1 rounded-md text-[9px] tracking-wide ${
+            selectedPlanetId === p.id ? 'active' : ''
+          }`}
+          onClick={() => selectBody(p.id)}
+          style={
+            selectedPlanetId === p.id
+              ? { borderColor: p.color }
+              : undefined
+          }
+        >
+          {p.name}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  )
+  const cameraCard = (
+  <div className="glass-panel rounded-2xl px-3 sm:px-4 py-3">
+    <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted block mb-2">
+      Camera Controls
+    </span>
+    <div className="flex flex-wrap gap-1.5">
+      <button
+        type="button"
+        className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
+        onClick={() => {
+          void sfxEngine.playUiTap()
+          requestCameraAction('zoomIn')
+        }}
+      >
+        Zoom In
+      </button>
+      <button
+        type="button"
+        className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
+        onClick={() => {
+          void sfxEngine.playUiTap()
+          requestCameraAction('zoomOut')
+        }}
+      >
+        Zoom Out
+      </button>
+      <button
+        type="button"
+        className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
+        onClick={() => {
+          void sfxEngine.playUiTap()
+          requestCameraAction('topView')
+        }}
+      >
+        Top View
+      </button>
+      <button
+        type="button"
+        className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
+        onClick={() => {
+          void sfxEngine.playUiTap()
+          requestCameraAction('reset')
+        }}
+      >
+        Free Orbit
+      </button>
+      <button
+        type="button"
+        className={`glass-button px-2.5 py-1.5 rounded-lg text-[10px] ${
+          activePanel === 'camera' ? 'active' : ''
+        }`}
+        onClick={() => {
+          void sfxEngine.playUiTap()
+          togglePanel('camera')
+        }}
+      >
+        Tips
+      </button>
+    </div>
+  </div>
+  )
+
+  // Mobile bottom sheet embeds individual cards (no fixed footer)
+  if (section) {
+    return (
+      <div
+        data-asos-ui
+        className="flex flex-col gap-2 w-full"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {section === 'planets' && (
+          <>
+            {planetsCard}
+            {playbackCard}
+            {timelineCard}
+          </>
+        )}
+        {section === 'camera' && cameraCard}
+      </div>
+    )
+  }
+
   return (
     <motion.footer
       data-asos-ui
@@ -45,177 +241,16 @@ export function BottomBar() {
       transition={{ duration: 0.9, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="flex flex-col gap-3 max-w-[1600px] mx-auto">
-        {/* Timeline */}
-        <div className="pointer-events-auto glass-panel rounded-2xl px-4 sm:px-6 py-3 mx-auto w-full max-w-3xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted">
-              Simulation Timeline
-            </span>
-            <span className="font-display text-sm text-space-accent tabular-nums">
-              {Math.round(simulationYear)}
-            </span>
-          </div>
-          <input
-            type="range"
-            min={1990}
-            max={2100}
-            step={1}
-            value={simulationYear}
-            onChange={(e) => {
-              const now = performance.now()
-              if (now - timelineSfxAt.current > 90) {
-                void sfxEngine.playTimeline()
-                timelineSfxAt.current = now
-              }
-              setSimulationYear(Number(e.target.value))
-            }}
-            className="space-slider"
-            aria-label="Simulation year"
-          />
-          <div className="flex justify-between mt-1.5 text-[9px] tracking-wider text-white/30 tabular-nums">
-            <span>1990</span>
-            <span>2000</span>
-            <span>2025</span>
-            <span>2050</span>
-            <span>2100</span>
-          </div>
-        </div>
+        {timelineCard}
 
         <div className="flex flex-wrap items-end justify-between gap-3">
-          {/* Bottom Left — Speed & playback */}
-          <div className="pointer-events-auto glass-panel rounded-2xl px-3 sm:px-4 py-3 flex flex-col gap-2.5">
-            <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted">
-              Simulation Speed
-            </span>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {SPEED_PRESETS.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  className={`glass-button px-2.5 py-1 rounded-lg text-[10px] tabular-nums ${
-                    simulationSpeed === p.value ? 'active' : ''
-                  }`}
-                  onClick={() => {
-                    void sfxEngine.playUiTap()
-                    setSimulationSpeed(p.value)
-                  }}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                className={`glass-button px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase ${
-                  isPaused ? 'active' : ''
-                }`}
-                onClick={() => {
-                  void sfxEngine.playUiTap()
-                  togglePause()
-                }}
-              >
-                {isPaused ? 'Play' : 'Pause'}
-              </button>
-              <button
-                type="button"
-                className="glass-button px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase"
-                onClick={() => {
-                  void sfxEngine.playUiTap()
-                  resetSimulation()
-                }}
-              >
-                Reset
-              </button>
-            </div>
-          </div>
+          {playbackCard}
 
           {/* Bottom Right — Planet info + camera */}
           <div className="pointer-events-auto flex flex-col sm:flex-row gap-2">
-            <div className="glass-panel rounded-2xl px-3 sm:px-4 py-3">
-              <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted block mb-2">
-                Planet Information
-              </span>
-              <div className="flex flex-wrap gap-1 max-w-[280px]">
-                {SELECTABLE_BODIES.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`glass-button px-2 py-1 rounded-md text-[9px] tracking-wide ${
-                      selectedPlanetId === p.id ? 'active' : ''
-                    }`}
-                    onClick={() => selectBody(p.id)}
-                    style={
-                      selectedPlanetId === p.id
-                        ? { borderColor: p.color }
-                        : undefined
-                    }
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {planetsCard}
 
-            <div className="glass-panel rounded-2xl px-3 sm:px-4 py-3">
-              <span className="text-[9px] tracking-[0.25em] uppercase text-space-muted block mb-2">
-                Camera Controls
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
-                  onClick={() => {
-                    void sfxEngine.playUiTap()
-                    requestCameraAction('zoomIn')
-                  }}
-                >
-                  Zoom In
-                </button>
-                <button
-                  type="button"
-                  className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
-                  onClick={() => {
-                    void sfxEngine.playUiTap()
-                    requestCameraAction('zoomOut')
-                  }}
-                >
-                  Zoom Out
-                </button>
-                <button
-                  type="button"
-                  className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
-                  onClick={() => {
-                    void sfxEngine.playUiTap()
-                    requestCameraAction('topView')
-                  }}
-                >
-                  Top View
-                </button>
-                <button
-                  type="button"
-                  className="glass-button px-2.5 py-1.5 rounded-lg text-[10px]"
-                  onClick={() => {
-                    void sfxEngine.playUiTap()
-                    requestCameraAction('reset')
-                  }}
-                >
-                  Free Orbit
-                </button>
-                <button
-                  type="button"
-                  className={`glass-button px-2.5 py-1.5 rounded-lg text-[10px] ${
-                    activePanel === 'camera' ? 'active' : ''
-                  }`}
-                  onClick={() => {
-                    void sfxEngine.playUiTap()
-                    togglePanel('camera')
-                  }}
-                >
-                  Tips
-                </button>
-              </div>
-            </div>
+            {cameraCard}
           </div>
         </div>
       </div>

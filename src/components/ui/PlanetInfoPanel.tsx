@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
 import { useExplorationStore } from '../../store/useExplorationStore'
 import { PLANETS_BY_ID } from '../../data/planets'
+import { isMobile } from '../../utils/device'
+import { useMobileUiStore } from '../../store/useMobileUiStore'
+import { MobileBottomCard } from './MobileBottomCard'
 import {
   getOrbitalSpeedKmS,
   getDistanceAu,
@@ -26,6 +29,7 @@ export function PlanetInfoPanel() {
   // Live clock from scene if available (panel is outside Canvas — use store-synced anim)
   const animDaysStore = useSimulatorStore((s) => s.liveAnimDays)
   const discoveryOpen = useExplorationStore((s) => s.selectedDiscoveryId)
+  const sheetOpen = useMobileUiStore((s) => s.sheetOpen)
 
   const planet =
     selectedPlanetId && !discoveryOpen ? PLANETS_BY_ID[selectedPlanetId] : null
@@ -54,39 +58,8 @@ export function PlanetInfoPanel() {
 
   if (photoMode) return null
 
-  return (
-    <AnimatePresence>
-      {planet && (
-        <motion.aside
-          data-asos-ui
-          className="glass-panel fixed top-20 right-4 z-30 w-[min(100vw-2rem,340px)] max-h-[calc(100vh-10rem)] rounded-2xl overflow-hidden flex flex-col"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 40 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-white/5">
-            <div>
-              <p className="text-[9px] tracking-[0.3em] uppercase text-space-muted mb-1">
-                Celestial Body
-              </p>
-              <h2 className="font-display text-xl tracking-wide text-white text-glow-soft">
-                {planet.name}
-              </h2>
-            </div>
-            <button
-              type="button"
-              className="glass-button w-8 h-8 rounded-lg text-sm flex items-center justify-center shrink-0"
-              onClick={() => setSelectedPlanetId(null)}
-              aria-label="Close panel"
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="panel-scroll overflow-y-auto px-5 py-4 space-y-4">
+  const details = planet ? (
+    <>
             <div
               className="h-1 w-16 rounded-full"
               style={{
@@ -158,6 +131,67 @@ export function PlanetInfoPanel() {
                 ))}
               </ul>
             </div>
+    </>
+  ) : null
+
+  if (isMobile) {
+    const stat = (label: string, value: string) => ({ label, value })
+    return (
+      <AnimatePresence>
+        {planet && !sheetOpen && (
+          <MobileBottomCard
+            key={planet.id}
+            kicker="Celestial Body"
+            title={planet.name}
+            accent={planet.color}
+            stats={[
+              stat('Radius', planet.info.radiusKm),
+              stat('Gravity', planet.info.gravity),
+              stat('Avg. Temp', planet.info.avgTemp),
+            ]}
+            onClose={() => setSelectedPlanetId(null)}
+          >
+            {details}
+          </MobileBottomCard>
+        )}
+      </AnimatePresence>
+    )
+  }
+
+  return (
+    <AnimatePresence>
+      {planet && (
+        <motion.aside
+          data-asos-ui
+          className="glass-panel fixed top-20 right-4 z-30 w-[min(100vw-2rem,340px)] max-h-[calc(100vh-10rem)] rounded-2xl overflow-hidden flex flex-col"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 40 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-white/5">
+            <div>
+              <p className="text-[9px] tracking-[0.3em] uppercase text-space-muted mb-1">
+                Celestial Body
+              </p>
+              <h2 className="font-display text-xl tracking-wide text-white text-glow-soft">
+                {planet.name}
+              </h2>
+            </div>
+            <button
+              type="button"
+              className="glass-button w-8 h-8 rounded-lg text-sm flex items-center justify-center shrink-0"
+              onClick={() => setSelectedPlanetId(null)}
+              aria-label="Close panel"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="panel-scroll overflow-y-auto px-5 py-4 space-y-4">
+            {details}
           </div>
         </motion.aside>
       )}

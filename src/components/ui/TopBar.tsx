@@ -1,6 +1,8 @@
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
 import { sfxEngine } from '../../audio/sfxEngine'
+import { isMobile } from '../../utils/device'
 
 const NAV = [
   { id: 'settings' as const, label: 'Settings' },
@@ -14,6 +16,7 @@ export function TopBar() {
   const activePanel = useSimulatorStore((s) => s.activePanel)
   const togglePanel = useSimulatorStore((s) => s.togglePanel)
   const togglePhotoMode = useSimulatorStore((s) => s.togglePhotoMode)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   if (photoMode) {
     return (
@@ -70,7 +73,69 @@ export function TopBar() {
         </p>
       </div>
 
-      {/* Nav */}
+      {/* Mobile: single menu button + dropdown */}
+      {isMobile && (
+        <div className="pointer-events-auto relative">
+          <button
+            type="button"
+            className={`glass-button w-10 h-10 rounded-full flex items-center justify-center ${
+              menuOpen ? 'active' : ''
+            }`}
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            onClick={() => {
+              void sfxEngine.playUiTap()
+              setMenuOpen((v) => !v)
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+              <path d="M3 5h12M3 9h12M3 13h12" />
+            </svg>
+          </button>
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                className="glass-panel absolute right-0 top-12 w-44 rounded-2xl p-2 flex flex-col gap-1"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {NAV.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`glass-button px-3 py-2.5 rounded-xl text-[11px] tracking-[0.12em] uppercase text-left ${
+                      activePanel === item.id ? 'active' : ''
+                    }`}
+                    onClick={() => {
+                      void sfxEngine.playUiTap()
+                      setMenuOpen(false)
+                      togglePanel(item.id)
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="glass-button px-3 py-2.5 rounded-xl text-[11px] tracking-[0.12em] uppercase text-left"
+                  onClick={() => {
+                    void sfxEngine.playUiTap()
+                    setMenuOpen(false)
+                    togglePhotoMode()
+                  }}
+                >
+                  Photo
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Nav (desktop) */}
+      {!isMobile && (
       <nav className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
         {NAV.map((item) => (
           <button
@@ -99,6 +164,7 @@ export function TopBar() {
           Photo
         </button>
       </nav>
+      )}
     </motion.header>
   )
 }

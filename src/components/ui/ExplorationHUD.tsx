@@ -7,6 +7,7 @@ import { buildSearchIndex, filterSearch } from '../../utils/discoverySearch'
 import { sfxEngine } from '../../audio/sfxEngine'
 import { PLANETS_BY_ID } from '../../data/planets'
 import { MISSIONS_BY_ID } from '../../data/missions'
+import { isMobile } from '../../utils/device'
 
 const PHASE_LABEL: Record<string, string> = {
   idle: 'Idle',
@@ -22,7 +23,14 @@ const PHASE_LABEL: Record<string, string> = {
 /**
  * Exploration chrome — glass style. pointer-events isolated from canvas.
  */
-export function ExplorationHUD() {
+type HudProps = {
+  /** Mobile bottom sheet: render inline (no fixed positioning) */
+  embedded?: boolean
+  /** Which cards to show; omitted = all (desktop floating HUD) */
+  section?: 'explore' | 'camera'
+}
+
+export function ExplorationHUD({ embedded = false, section }: HudProps = {}) {
   const photoMode = useSimulatorStore((s) => s.photoMode)
   const selectPlanet = useSimulatorStore((s) => s.selectPlanet)
 
@@ -125,10 +133,16 @@ export function ExplorationHUD() {
   return (
     <div
       data-asos-ui
-      className="fixed left-4 top-20 z-30 pointer-events-none flex flex-col gap-2 max-w-[280px]"
+      className={
+        embedded
+          ? 'flex flex-col gap-2 w-full'
+          : 'fixed left-4 top-20 z-30 pointer-events-none flex flex-col gap-2 max-w-[280px]'
+      }
       onPointerDown={stopUi}
       onClick={stopUi}
     >
+      {section !== 'camera' && (
+        <>
       <div className="pointer-events-auto glass-panel rounded-2xl px-3 py-2.5 space-y-2">
         <p className="text-[9px] tracking-[0.25em] uppercase text-space-muted">
           Exploration
@@ -269,6 +283,9 @@ export function ExplorationHUD() {
             {travelError || statusMsg}
           </p>
         )}
+        {/* Warp Drive is desktop-only (removed from the mobile UI) */}
+        {!isMobile && (
+          <>
         <p className="text-[9px] tracking-[0.2em] uppercase text-space-muted pt-1">
           Warp Drive
         </p>
@@ -296,8 +313,13 @@ export function ExplorationHUD() {
             {WARP_SPEEDS[warpLevel]}
           </p>
         )}
+          </>
+        )}
       </div>
+        </>
+      )}
 
+      {section !== 'explore' && (
       <div className="pointer-events-auto glass-panel rounded-2xl px-3 py-2.5">
         <p className="text-[9px] tracking-[0.25em] uppercase text-space-muted mb-1.5">
           Camera Mode
@@ -322,6 +344,7 @@ export function ExplorationHUD() {
           ))}
         </div>
       </div>
+      )}
     </div>
   )
 }

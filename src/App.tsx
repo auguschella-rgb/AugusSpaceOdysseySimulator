@@ -9,6 +9,8 @@ import { FloatingPanels } from './components/ui/Panels'
 import { ExplorationHUD } from './components/ui/ExplorationHUD'
 import { DiscoveryPanel } from './components/ui/DiscoveryPanel'
 import { LoadStatus } from './components/ui/LoadStatus'
+import { MobileUI } from './components/ui/MobileUI'
+import { isMobile } from './utils/device'
 import { useSimulatorStore } from './store/useSimulatorStore'
 import { useExplorationStore } from './store/useExplorationStore'
 import { ambientEngine } from './audio/ambientEngine'
@@ -156,10 +158,21 @@ export default function App() {
         <>
           <SolarSystemScene />
           <TopBar />
-          <BottomBar />
-          <PlanetInfoPanel />
-          <DiscoveryPanel />
-          <ExplorationHUD />
+          {isMobile ? (
+            // Mobile: no floating HUD panels — Controls FAB + bottom sheet + compact cards
+            <>
+              <MobileUI />
+              <PlanetInfoPanel />
+              <DiscoveryPanel />
+            </>
+          ) : (
+            <>
+              <BottomBar />
+              <PlanetInfoPanel />
+              <DiscoveryPanel />
+              <ExplorationHUD />
+            </>
+          )}
           <LoadStatus />
           <FloatingPanels />
         </>
