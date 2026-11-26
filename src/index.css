@@ -33,6 +33,17 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Mobile: fill the dynamic visual viewport, including notch / landscape edges.
+   Desktop keeps the 100% box above so layout is unchanged. */
+html.is-mobile,
+html.is-mobile body,
+html.is-mobile #root {
+  width: 100dvw;
+  height: 100dvh;
+  min-width: 100dvw;
+  min-height: 100dvh;
+}
+
 body {
   user-select: none;
   cursor: default;

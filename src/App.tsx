@@ -11,6 +11,9 @@ import { DiscoveryPanel } from './components/ui/DiscoveryPanel'
 import { LoadStatus } from './components/ui/LoadStatus'
 import { MobileUI } from './components/ui/MobileUI'
 import { isMobile } from './utils/device'
+import { useMobileUiStore } from './store/useMobileUiStore'
+import { ImmersiveChrome } from './components/ui/ImmersiveChrome'
+import { exitImmersive } from './utils/immersive'
 import { useSimulatorStore } from './store/useSimulatorStore'
 import { useExplorationStore } from './store/useExplorationStore'
 import { musicController } from './audio/musicController'
@@ -24,6 +27,7 @@ export default function App() {
   const setPreferFullscreen = useSimulatorStore((s) => s.setPreferFullscreen)
   const hydrateFromStorage = useSimulatorStore((s) => s.hydrateFromStorage)
   const lastDbl = useRef(0)
+  const immersive = useMobileUiStore((st) => st.immersive)
 
   // Hydrate saved preferences once
   useEffect(() => {
@@ -43,6 +47,11 @@ export default function App() {
       const fs = isFullscreen()
       setIsFullscreen(fs)
       setPreferFullscreen(fs)
+      // Mobile immersive tracks native fullscreen exits (Back / swipe) but
+      // does not auto-enter; iOS never fires this, so the in-app flag stays.
+      if (isMobile && !fs && useMobileUiStore.getState().immersive) {
+        void exitImmersive()
+      }
     }
     document.addEventListener('fullscreenchange', onFs)
     document.addEventListener('webkitfullscreenchange', onFs as EventListener)
@@ -157,24 +166,30 @@ export default function App() {
       {hasStarted && (
         <>
           <SolarSystemScene />
-          <TopBar />
-          {isMobile ? (
-            // Mobile: no floating HUD panels — Controls FAB + bottom sheet + compact cards
-            <>
-              <MobileUI />
-              <PlanetInfoPanel />
-              <DiscoveryPanel />
-            </>
+          {isMobile && immersive ? (
+            <ImmersiveChrome />
           ) : (
             <>
-              <BottomBar />
-              <PlanetInfoPanel />
-              <DiscoveryPanel />
-              <ExplorationHUD />
+              <TopBar />
+              {isMobile ? (
+                // Mobile: no floating HUD panels — Controls FAB + bottom sheet + compact cards
+                <>
+                  <MobileUI />
+                  <PlanetInfoPanel />
+                  <DiscoveryPanel />
+                </>
+              ) : (
+                <>
+                  <BottomBar />
+                  <PlanetInfoPanel />
+                  <DiscoveryPanel />
+                  <ExplorationHUD />
+                </>
+              )}
+              <LoadStatus />
+              <FloatingPanels />
             </>
           )}
-          <LoadStatus />
-          <FloatingPanels />
         </>
       )}
     </div>

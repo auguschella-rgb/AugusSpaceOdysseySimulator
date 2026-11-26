@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
 import { sfxEngine } from '../../audio/sfxEngine'
 import { isMobile } from '../../utils/device'
+import { enterImmersive } from '../../utils/immersive'
 
 const NAV = [
   { id: 'settings' as const, label: 'Settings' },
@@ -60,7 +61,7 @@ export function TopBar() {
         >
           <div className="w-2 h-2 rounded-full bg-white/90" />
         </div>
-        <div className="hidden sm:block">
+        <div className={isMobile ? 'hidden' : 'hidden sm:block'}>
           <p className="font-display text-sm tracking-wide text-white text-glow-soft">
             Augus Space Odyssey Simulator
           </p>
@@ -68,14 +69,31 @@ export function TopBar() {
             Journey Beyond Reality
           </p>
         </div>
-        <p className="sm:hidden font-display text-xs tracking-wide text-white">
+        <p className={isMobile ? 'font-display text-xs tracking-wide text-white' : 'sm:hidden font-display text-xs tracking-wide text-white'}>
           ASOS
         </p>
       </div>
 
-      {/* Mobile: single menu button + dropdown */}
+      {/* Mobile: labeled Full screen control + menu (portrait and landscape) */}
       {isMobile && (
-        <div className="pointer-events-auto relative">
+        <div className="pointer-events-auto relative flex items-center gap-1.5">
+          <button
+            type="button"
+            className="glass-button h-10 pl-2.5 pr-3 rounded-full flex items-center gap-1.5 shrink-0"
+            style={{ borderColor: 'rgba(160, 200, 255, 0.45)' }}
+            aria-label="Enter fullscreen"
+            title="Full screen"
+            onClick={() => {
+              void sfxEngine.playUiTap()
+              setMenuOpen(false)
+              void enterImmersive()
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
+            </svg>
+            <span className="text-[9px] tracking-[0.12em] uppercase whitespace-nowrap">Full screen</span>
+          </button>
           <button
             type="button"
             className={`glass-button w-10 h-10 rounded-full flex items-center justify-center ${
@@ -101,6 +119,20 @@ export function TopBar() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
+                <button
+                  type="button"
+                  className="glass-button px-3 py-2.5 rounded-xl text-[11px] tracking-[0.12em] uppercase text-left flex items-center gap-2"
+                  onClick={() => {
+                    void sfxEngine.playUiTap()
+                    setMenuOpen(false)
+                    void enterImmersive()
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
+                  </svg>
+                  Full screen
+                </button>
                 {NAV.map((item) => (
                   <button
                     key={item.id}

@@ -55,7 +55,10 @@ function SceneContent() {
 
 export function SolarSystemScene() {
   return (
-    <div className="absolute inset-0 z-0 bg-black">
+    <div
+      className="absolute inset-0 z-0 bg-black"
+      style={isMobile ? { width: '100dvw', height: '100dvh' } : undefined}
+    >
       <Canvas
         camera={{ position: [0, 38, 85], fov: 36, near: 0.1, far: 700 }}
         dpr={isMobile ? [1, 2] : [1, 1.5]}
