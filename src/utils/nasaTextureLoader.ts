@@ -36,8 +36,8 @@ let pipelineStarted = false
 /** Mobile uses the small albedo-only set; desktop keeps the full-res registry. */
 const BODY_PATHS = isMobile ? NASA_BODY_TEXTURES_MOBILE : NASA_BODY_TEXTURES
 const SPACE_PATHS = isMobile ? NASA_SPACE_MOBILE : NASA_SPACE
-const ANISO_COLOR = isMobile ? 4 : 16
-const ANISO_DATA = isMobile ? 4 : 12
+const ANISO_COLOR = isMobile ? 8 : 16
+const ANISO_DATA = isMobile ? 8 : 12
 
 export type LoadPhase =
   | 'idle'

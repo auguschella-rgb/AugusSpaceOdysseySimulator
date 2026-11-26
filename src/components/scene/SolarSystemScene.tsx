@@ -58,10 +58,10 @@ export function SolarSystemScene() {
     <div className="absolute inset-0 z-0 bg-black">
       <Canvas
         camera={{ position: [0, 38, 85], fov: 36, near: 0.1, far: 700 }}
-        dpr={isMobile ? 1 : [1, 1.5]}
+        dpr={isMobile ? [1, 2] : [1, 1.5]}
         shadows={false}
         gl={{
-          antialias: !isMobile,
+          antialias: true,
           alpha: false,
           powerPreference: 'high-performance',
           stencil: false,

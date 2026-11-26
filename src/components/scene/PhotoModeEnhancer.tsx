@@ -14,8 +14,9 @@ export function PhotoModeEnhancer() {
 
   useEffect(() => {
     if (isMobile) {
-      // Mobile: keep render resolution at 1x (1.5x only for Photo Mode screenshots)
-      gl.setPixelRatio(photoMode ? 1.5 : 1)
+      // Mobile: render at the screen's real sharpness (capped at 2x; 2.5x in Photo Mode)
+      const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 2)
+      gl.setPixelRatio(photoMode ? Math.min(dpr * 1.25, 2.5) : dpr)
       return
     }
     const max = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 2)
