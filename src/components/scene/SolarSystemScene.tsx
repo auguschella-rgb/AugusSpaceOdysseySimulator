@@ -17,6 +17,7 @@ import { TravelSystem } from './TravelSystem'
 import { WarpEffect } from './WarpEffect'
 import { Satellites } from './Satellites'
 import * as THREE from 'three'
+import { isMobile } from '../../utils/device'
 
 function SceneContent() {
   return (
@@ -46,7 +47,8 @@ function SceneContent() {
       <SpacecraftController />
       <TravelSystem />
       <LensFlare />
-      <PostFX />
+      {/* Mobile: no EffectComposer (HalfFloat FBOs + 6 passes are too heavy) */}
+      {!isMobile && <PostFX />}
     </SimulationClockProvider>
   )
 }
@@ -56,10 +58,10 @@ export function SolarSystemScene() {
     <div className="absolute inset-0 z-0 bg-black">
       <Canvas
         camera={{ position: [0, 38, 85], fov: 36, near: 0.1, far: 700 }}
-        dpr={[1, 1.5]}
+        dpr={isMobile ? 1 : [1, 1.5]}
         shadows={false}
         gl={{
-          antialias: true,
+          antialias: !isMobile,
           alpha: false,
           powerPreference: 'high-performance',
           stencil: false,

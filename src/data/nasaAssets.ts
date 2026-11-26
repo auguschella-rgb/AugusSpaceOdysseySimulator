@@ -16,7 +16,10 @@ export type BodyTexturePaths = {
   mapPrimary?: string
 }
 
-const P = '/textures/planets'
+/** Respects Vite `base` (GitHub Pages sub-path) — '/' on Vercel / dev. */
+const BASE = import.meta.env.BASE_URL
+const P = `${BASE}textures/planets`
+const PM = `${BASE}textures/mobile`
 
 /** Path map for each celestial body */
 export const NASA_BODY_TEXTURES: Record<string, BodyTexturePaths> = {
@@ -73,8 +76,31 @@ export const NASA_BODY_TEXTURES: Record<string, BodyTexturePaths> = {
 }
 
 export const NASA_SPACE = {
-  milkyWay: '/textures/space/milky_way.jpg',
+  milkyWay: `${BASE}textures/space/milky_way.jpg`,
   milkyWayAlt: `${P}/milky_way.jpg`,
+}
+
+/**
+ * Mobile set: albedo only (max 1024x512 JPEG q80). No normal / specular / night /
+ * clouds extras — keeps startup around 1 MB instead of ~10 MB.
+ */
+export const NASA_BODY_TEXTURES_MOBILE: Record<string, BodyTexturePaths> = {
+  earth: { map: `${PM}/earth_day_nasa.jpg` },
+  moon: { map: `${PM}/moon.jpg` },
+  mars: { map: `${PM}/mars.jpg` },
+  mercury: { map: `${PM}/mercury.jpg` },
+  venus: { map: `${PM}/venus.jpg` },
+  jupiter: { map: `${PM}/jupiter.jpg` },
+  saturn: { map: `${PM}/saturn.jpg`, ringsMap: `${PM}/saturn_ring.png` },
+  uranus: { map: `${PM}/uranus.jpg` },
+  neptune: { map: `${PM}/neptune.jpg` },
+  pluto: { map: `${PM}/pluto.jpg` },
+  sun: { map: `${PM}/sun.jpg` },
+}
+
+export const NASA_SPACE_MOBILE = {
+  milkyWay: `${PM}/milky_way.jpg`,
+  milkyWayAlt: `${PM}/milky_way.jpg`,
 }
 
 export const NASA_CREDITS = [

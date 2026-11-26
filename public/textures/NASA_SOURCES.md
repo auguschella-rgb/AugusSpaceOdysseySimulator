@@ -31,7 +31,8 @@ Mission Alpha 3.0 packages public scientific imagery for offline use.
 - Voyager / NASA composites via Solar System Scope (CC-BY 4.0)
 
 ## Pluto
-- NASA New Horizons — PIA19952 (JPL Photojournal, public domain)
+- NASA New Horizons global color mosaic ("Pluto global color map", nasa.gov, public domain; via Wikimedia Commons `Pluto_color_mapmosaic.jpg`), resized to 2048x1024.
+  New Horizons did not image Pluto's far-south region; that unmapped band is filled with a smooth, procedurally blended extrapolation of the neighbouring terrain colours.
 
 ## Sun
 - SDO / science solar map via Solar System Scope (CC-BY 4.0)
@@ -43,3 +44,7 @@ Mission Alpha 3.0 packages public scientific imagery for offline use.
 - NASA material is generally not copyrighted (public domain) unless noted.
 - Solar System Scope textures: Creative Commons Attribution 4.0.
 - Credit NASA / Solar System Scope in derivative works as required.
+
+## Mobile set (`public/textures/mobile/`)
+- Downscaled copies (max 1024x512, JPEG q80; ring PNG keeps alpha) of the maps above, used only on phones/tablets.
+- Regenerate with Pillow if a source map changes.

@@ -13,7 +13,8 @@ import {
 import { useSimulationClock } from './SimulationClock'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
 import { PLANETS_BY_ID } from '../../data/planets'
-import { getNasaBodyTextures } from '../../utils/nasaTextureLoader'
+import { getNasaBodyTextures, requestBodyTexturesNear } from '../../utils/nasaTextureLoader'
+import { isMobile } from '../../utils/device'
 import { useTextureStore } from '../../store/useTextureStore'
 import { Atmosphere, ScatteringShell, RimLight } from './Atmosphere'
 import { sfxEngine } from '../../audio/sfxEngine'
@@ -119,6 +120,10 @@ const nightFragment = /* glsl */ `
   }
 `
 
+/** Mobile has no derived normal maps: use a flat normal so gas shading stays neutral. */
+const FLAT_NORMAL = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1, THREE.RGBAFormat)
+FLAT_NORMAL.needsUpdate = true
+
 export function Planet({ data }: PlanetProps) {
   const groupRef = useRef<THREE.Group>(null)
   const bodyRef = useRef<THREE.Group>(null)
@@ -140,6 +145,7 @@ export function Planet({ data }: PlanetProps) {
   const markBodyDblClick = useSimulatorStore((s) => s.markBodyDblClick)
   const photoMode = useSimulatorStore((s) => s.photoMode)
   const texRevision = useTextureStore((s) => s.revision)
+  const bumpTextures = useTextureStore((s) => s.bump)
 
   // NASA scientific maps (revision bumps after preload)
   const nasa = useMemo(() => getNasaBodyTextures(data.id), [data.id, texRevision])
@@ -165,7 +171,7 @@ export function Planet({ data }: PlanetProps) {
       isGas
         ? {
             map: { value: maps.map },
-            normalMap: { value: maps.normalMap ?? maps.map },
+            normalMap: { value: maps.normalMap ?? (isMobile ? FLAT_NORMAL : maps.map) },
             time: { value: 0 },
             speed: {
               value:
@@ -235,6 +241,8 @@ export function Planet({ data }: PlanetProps) {
     if (groupRef.current) {
       const dist = state.camera.position.distanceTo(groupRef.current.position)
       lodRef.current.dist = dist
+      // Mobile: lazy-load this body's textures once it is viewed / selected
+      requestBodyTexturesNear(data.id, dist, data.radius, selectedPlanetId === data.id, bumpTextures)
       const near = dist < data.radius * 32 + 20
       const mid = dist < data.radius * 55 + 40
       lodRef.current.near = near

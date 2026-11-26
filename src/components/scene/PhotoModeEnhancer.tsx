@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useThree } from '@react-three/fiber'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
+import { isMobile } from '../../utils/device'
 
 /**
  * Photo Mode must NOT change scene lighting, sky, or post pipeline structure.
@@ -12,6 +13,11 @@ export function PhotoModeEnhancer() {
   const { gl } = useThree()
 
   useEffect(() => {
+    if (isMobile) {
+      // Mobile: keep render resolution at 1x (1.5x only for Photo Mode screenshots)
+      gl.setPixelRatio(photoMode ? 1.5 : 1)
+      return
+    }
     const max = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 2)
     if (photoMode) {
       // Slightly higher resolution for screenshots — no clear color / tone mapping change

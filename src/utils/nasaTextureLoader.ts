@@ -4,7 +4,15 @@
  * Derive PBR maps only after albedo is ready, yielding between bodies.
  */
 import * as THREE from 'three'
-import { NASA_BODY_TEXTURES, NASA_SPACE, type BodyTexturePaths } from '../data/nasaAssets'
+import {
+  NASA_BODY_TEXTURES,
+  NASA_BODY_TEXTURES_MOBILE,
+  NASA_SPACE,
+  NASA_SPACE_MOBILE,
+  type BodyTexturePaths,
+} from '../data/nasaAssets'
+import { PLANETS_BY_ID } from '../data/planets'
+import { isMobile } from './device'
 import { getBodyMaps, type BodyMaps } from './planetTextures'
 import { deriveForBody } from './derivePbrMaps'
 
@@ -24,6 +32,12 @@ const cache = new Map<string, LoadedBodyTextures>()
 const inflight = new Map<string, Promise<LoadedBodyTextures>>()
 let milkyWay: THREE.Texture | null = null
 let pipelineStarted = false
+
+/** Mobile uses the small albedo-only set; desktop keeps the full-res registry. */
+const BODY_PATHS = isMobile ? NASA_BODY_TEXTURES_MOBILE : NASA_BODY_TEXTURES
+const SPACE_PATHS = isMobile ? NASA_SPACE_MOBILE : NASA_SPACE
+const ANISO_COLOR = isMobile ? 4 : 16
+const ANISO_DATA = isMobile ? 4 : 12
 
 export type LoadPhase =
   | 'idle'
@@ -65,7 +79,7 @@ function yieldFrame(): Promise<void> {
 
 function configureColorMap(tex: THREE.Texture) {
   tex.colorSpace = THREE.SRGBColorSpace
-  tex.anisotropy = 16
+  tex.anisotropy = ANISO_COLOR
   tex.wrapS = THREE.RepeatWrapping
   tex.wrapT = THREE.ClampToEdgeWrapping
   tex.minFilter = THREE.LinearMipmapLinearFilter
@@ -77,7 +91,7 @@ function configureColorMap(tex: THREE.Texture) {
 
 function configureDataMap(tex: THREE.Texture) {
   tex.colorSpace = THREE.NoColorSpace
-  tex.anisotropy = 12
+  tex.anisotropy = ANISO_DATA
   tex.wrapS = THREE.RepeatWrapping
   tex.wrapT = THREE.ClampToEdgeWrapping
   tex.generateMipmaps = true
@@ -129,6 +143,8 @@ function invertTexture(tex: THREE.Texture): THREE.Texture {
 }
 
 function applyDerived(id: string, result: LoadedBodyTextures) {
+  // Mobile: skip the expensive canvas-based PBR derivation (CPU + GPU memory)
+  if (isMobile) return
   try {
     const derived = deriveForBody(id, result.map)
     if (!derived) return
@@ -141,7 +157,28 @@ function applyDerived(id: string, result: LoadedBodyTextures) {
   }
 }
 
+/** Mobile only: a tiny flat-colour stand-in (no procedural canvas synthesis). */
+const placeholders = new Map<string, LoadedBodyTextures>()
+function mobilePlaceholder(id: string): LoadedBodyTextures {
+  let ph = placeholders.get(id)
+  if (ph) return ph
+  const color = new THREE.Color(PLANETS_BY_ID[id]?.color ?? '#9a9a9a')
+  const px = new Uint8Array([
+    Math.round(color.r * 255),
+    Math.round(color.g * 255),
+    Math.round(color.b * 255),
+    255,
+  ])
+  const tex = new THREE.DataTexture(px, 1, 1, THREE.RGBAFormat)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.needsUpdate = true
+  ph = { map: tex, isNasa: false }
+  placeholders.set(id, ph)
+  return ph
+}
+
 function proceduralFallback(id: string): LoadedBodyTextures {
+  if (isMobile) return mobilePlaceholder(id)
   const proc = getBodyMaps(id)
   return {
     map: proc.map,
@@ -243,8 +280,18 @@ export function ensureBodyTextures(id: string): Promise<LoadedBodyTextures> {
   if (cache.has(id)) return Promise.resolve(cache.get(id)!)
   if (inflight.has(id)) return inflight.get(id)!
 
-  const paths = NASA_BODY_TEXTURES[id]
+  const paths = BODY_PATHS[id]
   if (!paths) {
+    if (isMobile) {
+      // Minor moons share the (small) Moon map on mobile — no extra download.
+      const p = ensureBodyTextures('moon').then((moon) => {
+        cache.set(id, moon)
+        inflight.delete(id)
+        return moon
+      })
+      inflight.set(id, p)
+      return p
+    }
     const fb = proceduralFallback(id)
     cache.set(id, fb)
     return Promise.resolve(fb)
@@ -273,14 +320,20 @@ export function startTexturePipeline(onBodyReady?: (id: string) => void): Promis
 
   return (async () => {
     const loader = new THREE.TextureLoader()
-    const priority = ['earth', 'moon', 'mars', 'sun', 'jupiter', 'saturn']
-    const rest = Object.keys(NASA_BODY_TEXTURES).filter((id) => !priority.includes(id))
+    // Mobile: only Earth (+ small milky way) up front; every other body loads on
+    // demand via ensureBodyTextures / requestBodyTexturesNear when it is in view.
+    const priority = isMobile
+      ? ['earth']
+      : ['earth', 'moon', 'mars', 'sun', 'jupiter', 'saturn']
+    const rest = isMobile
+      ? []
+      : Object.keys(NASA_BODY_TEXTURES).filter((id) => !priority.includes(id))
 
     setPhase('loading_planets')
     // First pass: albedo + extras, skip heavy derive for speed
     for (const id of priority) {
       if (cache.has(id)) continue
-      const paths = NASA_BODY_TEXTURES[id]
+      const paths = BODY_PATHS[id]
       if (!paths) continue
       try {
         const tex = await loadBody(loader, id, paths, false)
@@ -307,8 +360,8 @@ export function startTexturePipeline(onBodyReady?: (id: string) => void): Promis
     setPhase('loading_environment')
     try {
       const mw =
-        (await loadOne(loader, NASA_SPACE.milkyWay)) ??
-        (await loadOne(loader, NASA_SPACE.milkyWayAlt))
+        (await loadOne(loader, SPACE_PATHS.milkyWay)) ??
+        (await loadOne(loader, SPACE_PATHS.milkyWayAlt))
       if (mw) {
         configureColorMap(mw)
         mw.mapping = THREE.EquirectangularReflectionMapping
@@ -323,7 +376,7 @@ export function startTexturePipeline(onBodyReady?: (id: string) => void): Promis
       await yieldFrame()
       if (cache.has(id)) continue
       try {
-        const tex = await loadBody(loader, id, NASA_BODY_TEXTURES[id], true)
+        const tex = await loadBody(loader, id, BODY_PATHS[id], true)
         cache.set(id, tex)
         onBodyReady?.(id)
       } catch {
@@ -345,9 +398,30 @@ export function getNasaBodyTextures(id: string): LoadedBodyTextures {
   if (cache.has(id)) return cache.get(id)!
   // Instant procedural so first paint never blocks; upgrade async
   const fb = proceduralFallback(id)
-  // Kick background load
-  void ensureBodyTextures(id)
+  // Kick background load (desktop). On mobile loads are lazy: they start when
+  // the body is viewed — see requestBodyTexturesNear().
+  if (!isMobile) void ensureBodyTextures(id)
   return fb
+}
+
+const requestedNear = new Set<string>()
+
+/**
+ * Mobile lazy-load trigger: call from a body's frame loop with its camera
+ * distance. Starts the (cached, de-duplicated) load once the body is in view /
+ * selected, then bumps the texture revision via `onLoaded`. No-op on desktop.
+ */
+export function requestBodyTexturesNear(
+  id: string,
+  dist: number,
+  radius: number,
+  selected: boolean,
+  onLoaded?: () => void
+) {
+  if (!isMobile || cache.has(id) || requestedNear.has(id)) return
+  if (!selected && dist > radius * 60 + 60) return
+  requestedNear.add(id)
+  void ensureBodyTextures(id).then(() => onLoaded?.())
 }
 
 export function getMilkyWayTexture(): THREE.Texture | null {

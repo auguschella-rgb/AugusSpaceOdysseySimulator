@@ -5,7 +5,7 @@ import { PLANETS_BY_ID } from '../../data/planets'
 import { getRotationAngle } from '../../utils/orbital'
 import { useSimulationClock } from './SimulationClock'
 import { useSimulatorStore } from '../../store/useSimulatorStore'
-import { getNasaBodyTextures } from '../../utils/nasaTextureLoader'
+import { getNasaBodyTextures, requestBodyTexturesNear } from '../../utils/nasaTextureLoader'
 import { useTextureStore } from '../../store/useTextureStore'
 import { sfxEngine } from '../../audio/sfxEngine'
 
@@ -132,13 +132,23 @@ export function Sun() {
   const markBodyDblClick = useSimulatorStore((s) => s.markBodyDblClick)
 
   const texRevision = useTextureStore((s) => s.revision)
+  const bumpTextures = useTextureStore((s) => s.bump)
+  const selectedPlanetId = useSimulatorStore((s) => s.selectedPlanetId)
   const nasa = useMemo(() => getNasaBodyTextures('sun'), [texRevision])
   const uniforms = useMemo(
     () => ({ map: { value: nasa.map }, time: { value: 0 } }),
     [nasa.map]
   )
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
+    // Mobile: lazy-load the Sun map once the camera is near / Sun selected
+    requestBodyTexturesNear(
+      'sun',
+      state.camera.position.length(),
+      data.radius,
+      selectedPlanetId === 'sun',
+      bumpTextures
+    )
     if (meshRef.current) {
       meshRef.current.rotation.y = getRotationAngle(data, year, animDays.current)
     }
